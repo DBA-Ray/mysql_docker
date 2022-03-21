@@ -1,0 +1,73 @@
+- name: Create directories for docker compose file
+  file: path={{ item }} state=directory
+  with_items:
+    - "{{ replicaset_dir }}/scripts"
+    - "{{ cluster_dir }}/scripts"
+
+- name: Rendering Dockerfile
+  template:
+    src: Dockerfile.j2
+    dest: "{{ item }}"
+  with_items:
+    - "{{ replicaset_dir }}/Dockerfile" 
+    - "{{ cluster_dir }}/Dockerfile"
+
+- name: Rendering docker-compose file for replicaset
+  template:
+    src: docker-compose.yml.j2
+    dest: "{{ item }}/docker-compose.yml"
+  with_items:
+    - "{{ replicaset_dir }}"
+  when: is_replica_set | default(False)
+
+- name: Rendering docker-compose file and config file for cluster
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - { src: 'docker-compose_cluster.yml.j2', dest: "{{ cluster_dir }}/docker-compose.yml" }
+    - { src: 'config_cluster.js.j2', dest: "{{ cluster_dir }}/scripts/config_cluster.js" }
+  when: is_cluster | default(False)
+
+- name: Start mysql container servers for replicaset
+  shell: "cd {{ replicaset_dir }} && docker-compose up -d"
+  when: is_replica_set | default(False)
+
+- name: Start mysql container servers for cluster
+  shell: "cd {{ cluster_dir }} && docker-compose up -d"
+  when: is_cluster | default(False)
+  tags: startup_cluster
+
+- name: Wait for mysql container servers are running
+  pause: seconds=7
+
+- name: Stop mysql container servers for replicaset
+  shell: "cd {{ replicaset_dir }} && docker-compose down"
+  when: is_replica_set | default(False)
+
+- name: Stop mysql container servers for cluster
+  shell: "cd {{ cluster_dir }} && docker-compose down"
+  when: is_cluster | default(False)
+  tags: shutdown_cluster
+ 
+- name: Rendering mysql conf file
+  template:
+    src: my.cnf.j2
+    dest: "{{ volume_base_dir }}/{{ item.value.port }}/conf/my.cnf"
+  with_dict: "{{ mysql_info }}"
+  tags: update_conf
+
+- name: Chown privileges for volume directories
+  file: path={{ volume_base_dir }} owner=999 group=999 recurse=yes
+  tags: update_conf
+
+- name: Wait for mysql container servers are stopping
+  pause: seconds=7
+
+- name: Start mysql container servers for replicaset
+  shell: "cd {{ replicaset_dir }} && docker-compose up -d"
+  when: is_replica_set | default(False)
+
+- name: Start mysql container servers for cluster
+  shell: "cd {{ cluster_dir }} && docker-compose up -d"
+  when: is_cluster | default(False)

@@ -1,0 +1,79 @@
+- name: Create directories for docker compose file
+  file: path={{ item }} state=directory
+  with_items:
+    - "{{ cluster_dir }}"
+    - "{{ router_dir }}"
+
+- name: Rendering Dockerfile
+  template:
+    src: Dockerfile.j2
+    dest: "{{ item }}"
+  with_items:
+    - "{{ cluster_dir }}/Dockerfile"
+
+- name: Register the variable of server_id
+  shell: "echo {{ ansible_default_ipv4['address'] }} | awk -F'.' '{print $4}'"
+  register: server_id
+
+- name: Rendering docker-compose file for router
+  template:
+    src: docker-compose_router_pro.yml.j2
+    dest: "{{ item }}/docker-compose.yml"
+  with_items:
+    - "{{ router_dir }}"
+
+- name: Rendering docker-compose file and config file for cluster
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - { src: 'docker-compose.yml.j2', dest: "{{ cluster_dir }}/docker-compose.yml" }
+    - { src: 'config_cluster_pro.js.j2', dest: "{{ cluster_dir }}/config_cluster.js" }
+
+- name: Start mysql container servers for cluster
+  shell: "cd {{ cluster_dir }} && docker-compose up -d"
+  tags: startup_cluster
+
+- name: Wait for mysql container servers are running
+  pause: seconds=7
+
+- name: Stop mysql container servers for cluster
+  shell: "cd {{ cluster_dir }} && docker-compose down"
+  tags: shutdown_cluster
+ 
+- name: Rendering mysql conf file
+  template:
+    src: my.cnf_pro.j2
+    dest: "{{ volume_base_dir }}/{{ base_port }}/conf/my.cnf"
+  tags: update_conf
+
+- name: Chown privileges for volume directories
+  file: path={{ volume_base_dir }} owner=999 group=999 recurse=yes
+  tags: update_conf
+
+- name: Wait for mysql container servers are stopping
+  pause: seconds=7
+
+- name: Start mysql container servers for cluster
+  shell: "cd {{ cluster_dir }} && docker-compose up -d"
+
+- name: Wait for mysql container servers are running
+  pause: seconds=7
+
+- name: Copy config innodb cluster file
+  shell: "docker cp {{ cluster_dir }}/config_cluster.js {{ ansible_hostname }}:/"
+
+- name: Wait for mysql container servers are configing cluster
+  pause: seconds=7
+
+- name: Config innodb cluster file
+  shell: "docker exec {{ ansible_hostname }} sh -c 'exec /usr/bin/mysqlsh root@{{ primary_host }}:{{ base_port }} --password='{{ root_password }}' -f /config_cluster.js'"
+  ignore_errors: yes
+  when: ansible_hostname == primary_host
+ 
+- name: Wait for innodb cluster servers are running
+  pause: seconds=7
+
+- name: Start mysql router container
+  shell: "cd {{ router_dir }} && docker-compose up -d"
+  when: ansible_hostname == primary_host

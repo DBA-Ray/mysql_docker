@@ -1,0 +1,79 @@
+version: '{{ compose_version }}'
+services:
+{% for key,value in mysql_info.items() %}
+  cluster_{{ key }}:
+    #build:
+      #context: ./
+      #dockerfile: Dockerfile
+    image: dbaray0501/mysql:{{ mysql_version }}
+    restart: always
+    hostname: mysql_{{ key }}_{{ env }}
+    container_name: cluster_{{ key }}_{{ env }}
+    networks:
+      sql_net:
+        ipv4_address: {{ value.ip }}
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: "{{ root_password }}"
+    volumes:
+      - {{ volume_base_dir }}/{{ value.port }}/data:/var/lib/mysql
+      - {{ volume_base_dir }}/{{ value.port }}/conf:/etc/mysql/conf.d
+      - {{ volume_base_dir }}/{{ value.port }}/log:/var/log
+    command:
+      --server_id={{ value.port }}
+      --lower_case_table_names=1
+      --authentication_policy=mysql_native_password
+      --port={{ value.port }}
+      --report_host={{ value.ip }}
+      --enforce_gtid_consistency=1
+      --gtid_mode=ON
+      --binlog_transaction_dependency_tracking=WRITESET
+    ports:
+      - "{{ value.port }}:{{ value.port }}"
+{% endfor %}
+  mysql-shell:
+    image: dbaray0501/mysql-shell:{{ mysql_version }}
+    container_name: mysql-shell
+    environment:
+      MYSQL_USER: root
+      MYSQL_HOST: {{ subnet }}.{{ base_port % 254 }}
+      MYSQL_PORT: {{ base_port }}
+      MYSQL_PASSWORD: "{{ root_password }}"
+      MYSQLSH_SCRIPT: "/scripts/config_cluster.js"
+    volumes:
+        - ./scripts/:/scripts/
+    depends_on:
+{% for key,value in mysql_info.items() %}
+      - cluster_{{ key }}
+{% endfor %}
+    networks:
+      - sql_net
+  mysqlrouter_{{ env }}:
+    image: dbaray0501/mysql-router:{{ mysql_version }}
+    restart: always
+    hostname: mysqlrouter_{{ env }}
+    container_name: mysqlrouter_{{ env }}
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_HOST: "{{ subnet }}.{{ base_port % 254 }}"
+      MYSQL_PORT: "{{ base_port }}"
+      MYSQL_USER: root
+      MYSQL_PASSWORD: "{{ root_password }}"
+      MYSQL_CREATE_ROUTER_USER: 0
+      MYSQL_INNODB_CLUSTER_MEMBERS: 3
+    ports:
+      - "{{ conf_base_port }}:{{ conf_base_port }}"
+    depends_on:
+{% for key,value in mysql_info.items() %}
+      - cluster_{{ key }}
+{% endfor %}
+      - mysql-shell
+    networks:
+      - sql_net
+
+networks:
+  sql_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: {{ subnet }}.0/24

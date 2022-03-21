@@ -1,0 +1,30 @@
+version: '{{ compose_version }}'
+services:
+  {{ ansible_hostname }}:
+    #build:
+      #context: ./
+      #dockerfile: Dockerfile
+    image: dbaray0501/mysql:{{ mysql_version }}
+    restart: always
+    hostname: {{ ansible_hostname }}
+    container_name: {{ ansible_hostname }}
+    network_mode: host
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: "{{ root_password }}"
+      MYSQL_ROOT_HOST: "{{ ansible_default_ipv4.network }}/24"
+    volumes:
+      - {{ volume_base_dir }}/{{ base_port }}/data:/var/lib/mysql
+      - {{ volume_base_dir }}/{{ base_port }}/conf:/etc/mysql/conf.d
+      - {{ volume_base_dir }}/{{ base_port }}/log:/var/log
+    command:
+      --server_id={{ server_id.stdout }}
+      --lower_case_table_names=1
+      --authentication_policy=mysql_native_password
+      --port={{ base_port }}
+      --report_host={{ ansible_default_ipv4.address }}
+      --enforce_gtid_consistency=1
+      --gtid_mode=ON
+      --binlog_transaction_dependency_tracking=WRITESET
+    ports:
+      - "{{ base_port }}:{{ base_port }}"

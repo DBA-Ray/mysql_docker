@@ -1,0 +1,29 @@
+var dbPass = "{{ root_password }}"
+var clusterName = "cluster_{{ env }}"
+
+try {
+  print('Checking the mysql node of InnoDB cluster...\n');
+  shell.connect('root@{{ subnet }}.{{ base_port % 254 }}:{{ base_port }}', dbPass)
+{% for key,value in mysql_info.items() %}
+  dba.checkInstanceConfiguration('root@{{ value.ip }}:{{ value.port }}', {password:dbPass});
+{% endfor %}
+  print('Setting up InnoDB cluster...\n');
+  var cluster = dba.createCluster(clusterName);
+  print('Adding instances to the cluster.');
+{% for key,value in mysql_info.items() %}
+{% if  value.port != base_port %}
+  cluster.addInstance('root@{{ value.ip }}:{{ value.port }}', {password:dbPass ,recoveryMethod: 'clone'});
+  print('.');
+{% endif %}
+{% endfor %}
+  print('.\nInstances successfully added to the cluster.');
+  print('\nInnoDB cluster deployed successfully.\n');
+} catch(e) {
+  print('\nThe InnoDB cluster could not be created.\n\nError: ' + e.message + '\n');
+}
+
+// var cluster=dba.getCluster();
+
+// cluster.status();
+
+// cluster.listRouters()

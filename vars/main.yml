@@ -1,0 +1,21 @@
+---
+# vars file for dba_ray.mysql_docker
+
+packages:
+  - vim
+  - lrzsz
+  - telnet
+  - net-tools
+  - tree
+  - unzip
+  - libaio
+  - numactl
+  - perl-DBD-mysql
+  - expect
+  - MySQL-python
+  - zstd
+  - python2-dnf
+  - epel-release
+  - python-pip
+  - mysql-router-community.x86_64
+  - mysql-shell.x86_64 

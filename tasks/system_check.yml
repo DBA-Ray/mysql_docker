@@ -1,0 +1,41 @@
+
+- name: Install docker
+  yum:
+    name: docker
+    state: latest
+
+- name: Enable docker server
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Start docker server
+  systemd:
+    name: docker
+    state: started
+
+# - name: Download the docker-compose file
+#   get_url:
+#     url: "{{ item }}"
+#     dest: /usr/bin/docker-compose
+#     mode: 0744
+#   with_items: 
+#     - "{{ docker_compose_url }}"
+#   register: result
+#   retries: 7
+#   until: result is succeeded
+#   run_once: True
+
+- name: Stop mysql container servers for cluster
+  shell: "cd {{ cluster_dir }} && docker-compose down"
+  when: whether_redeploy | default(False)
+
+- name: Remove existing mysql data directory and file
+  file:
+    path: "{{ item }}"
+    state: absent
+    remote_src: 'yes'
+  with_items:
+    - "{{ volume_base_dir }}"
+  when: whether_redeploy | default(False)

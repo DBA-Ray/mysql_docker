@@ -1,0 +1,33 @@
+---
+# defaults file for dba_ray.mysql_docker
+env: dev1
+#Net info
+subnet: 20.20.20
+#mysql and router info
+base_port: 3306 #Primary default port,other node depend on this info
+conf_base_port: 6446 #Not within the scope of the base port
+# Share a server
+mysql_info: 
+  primary:
+    ip: "{{ subnet }}.{{ base_port % 254 }}" 
+    port: "{{ base_port }}"
+  secondary1:
+    ip: "{{ subnet }}.{{ (base_port+1) % 254 }}" 
+    port: "{{ (base_port+1) }}"
+  secondary2:
+    ip: "{{ subnet }}.{{ (base_port+2) % 254 }}" 
+    port: "{{ (base_port+2) }}"
+# Not shared a server
+primary_host: "mgr1_{{ env }}"
+mgr_group: "mgr_{{ env }}"
+# Directory path
+volume_base_dir: /data/mysql_docker
+composefile_dir: /data/docker_compose
+replicaset_dir: "{{ composefile_dir }}/replicaset"
+cluster_dir: "{{ composefile_dir }}/cluster"
+router_dir: "{{ composefile_dir }}/router"
+# version info
+compose_version: 3.9
+mysql_version: 8.0.28
+# docker-compose file url
+docker_compose_url: https://github.com/docker/compose/releases/download/v2.3.3/docker-compose-linux-x86_64

@@ -1,0 +1,18 @@
+version: '{{ compose_version }}'
+services:
+ {{ ansible_hostname }}_router:
+    image: dbaray0501/mysql-router:{{ mysql_version }}
+    restart: always
+    hostname: {{ ansible_hostname }}_router
+    container_name: {{ ansible_hostname }}_router
+    network_mode: host
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_HOST: "{{ primary_host }}"
+      MYSQL_PORT: "{{ base_port }}"
+      MYSQL_USER: root
+      MYSQL_PASSWORD: "{{ root_password }}"
+      MYSQL_CREATE_ROUTER_USER: 0
+      MYSQL_INNODB_CLUSTER_MEMBERS: 3
+    ports:
+      - "{{ conf_base_port }}:{{ conf_base_port }}"

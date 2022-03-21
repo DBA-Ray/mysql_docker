@@ -1,0 +1,13 @@
+---
+# tasks file for dba_ray.mysql_docker
+- include: password.yml
+  when: ( is_cluster_pro | default(False) ) or ( is_replica_set | default(False) ) or ( is_cluster | default(False) )
+
+- include: system_check.yml
+  when: ( is_cluster_pro | default(False) ) or ( is_replica_set | default(False) ) or ( is_cluster | default(False) )
+
+- include: initial_cluster_replicaset.yml
+  when: ( is_replica_set | default(False) ) or ( is_cluster | default(False) ) 
+
+- include: initial_cluster.yml
+  when: is_cluster_pro | default(False)
