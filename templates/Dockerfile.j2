@@ -1,9 +1,0 @@
-FROM mysql:{{ mysql_version }}
-LABEL version="1.0" description="MySQL Service" by="DBA RAY"
-RUN touch /var/log/mysqld.log
-RUN touch /var/log/slow.log
-RUN chown -R mysql:mysql /var/log/mysqld.log
-RUN chown -R mysql:mysql /var/log/slow.log
-COPY ./mysql-shell_8.0.28-1debian10_amd64.deb /opt
-RUN apt-get update -y
-RUN apt-get install /opt/mysql-shell_8.0.28-1debian10_amd64.deb -y

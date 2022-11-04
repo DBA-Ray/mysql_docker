@@ -1,6 +1,8 @@
 ---
 # defaults file for dba_ray.mysql_docker
 env: dev1
+#mysql numbers
+MYSQL_INNODB_CLUSTER_MEMBERS: 2
 #Net info
 subnet: 20.20.20
 #mysql and router info
@@ -18,7 +20,7 @@ mysql_info:
     ip: "{{ subnet }}.{{ (base_port+2) % 254 }}" 
     port: "{{ (base_port+2) }}"
 # Not shared a server
-primary_host: "mgr1_{{ env }}"
+primary_host: "mgr2_{{ env }}"
 mgr_group: "mgr_{{ env }}"
 # Directory path
 volume_base_dir: /data/mysql_docker

@@ -1,9 +1,10 @@
 ---
 - hosts: localhost
+  gather_facts: True
   remote_user: root
   vars:
     is_replica_set: False
     is_cluster: True
-    whether_redeploy: False # Whether to uninstall the original service and then install it
+    whether_redeploy: True # Whether to uninstall the original service and then install it
   roles:
     - dba_ray.mysql_docker

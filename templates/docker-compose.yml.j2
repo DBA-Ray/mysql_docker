@@ -8,6 +8,8 @@ services:
     restart: always
     hostname: {{ ansible_hostname }}
     container_name: {{ ansible_hostname }}
+    security_opt:
+      - seccomp:unconfined
     network_mode: host
     environment:
       TZ: Asia/Shanghai
@@ -17,6 +19,7 @@ services:
       - {{ volume_base_dir }}/{{ base_port }}/data:/var/lib/mysql
       - {{ volume_base_dir }}/{{ base_port }}/conf:/etc/mysql/conf.d
       - {{ volume_base_dir }}/{{ base_port }}/log:/var/log
+      - {{ volume_base_dir }}/{{ base_port }}/backup:/backup
     command:
       --server_id={{ server_id.stdout }}
       --lower_case_table_names=1
@@ -26,5 +29,7 @@ services:
       --enforce_gtid_consistency=1
       --gtid_mode=ON
       --binlog_transaction_dependency_tracking=WRITESET
+      --loose-group_replication_ip_allowlist={{ ansible_default_ipv4.network }}/24
+      --loose-group_replication_group_name="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
     ports:
       - "{{ base_port }}:{{ base_port }}"

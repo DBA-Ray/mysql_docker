@@ -5,6 +5,8 @@ services:
     restart: always
     hostname: {{ ansible_hostname }}_router
     container_name: {{ ansible_hostname }}_router
+    security_opt:
+      - seccomp:unconfined
     network_mode: host
     environment:
       TZ: Asia/Shanghai
@@ -13,6 +15,6 @@ services:
       MYSQL_USER: root
       MYSQL_PASSWORD: "{{ root_password }}"
       MYSQL_CREATE_ROUTER_USER: 0
-      MYSQL_INNODB_CLUSTER_MEMBERS: 3
+      MYSQL_INNODB_CLUSTER_MEMBERS: {{ MYSQL_INNODB_CLUSTER_MEMBERS }}
     ports:
       - "{{ conf_base_port }}:{{ conf_base_port }}"

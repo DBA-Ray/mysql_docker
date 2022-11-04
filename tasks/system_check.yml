@@ -31,6 +31,9 @@
   shell: "cd {{ cluster_dir }} && docker-compose down"
   when: whether_redeploy | default(False)
 
+- name: Wait for mysql container servers are stopping
+  pause: seconds=20
+
 - name: Remove existing mysql data directory and file
   file:
     path: "{{ item }}"
