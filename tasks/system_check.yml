@@ -33,6 +33,7 @@
 
 - name: Wait for mysql container servers are stopping
   pause: seconds=20
+  when: whether_redeploy | default(False)
 
 - name: Remove existing mysql data directory and file
   file:
